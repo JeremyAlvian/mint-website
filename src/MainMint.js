@@ -3,7 +3,7 @@ import { ethers, BigNumber } from "ethers";
 import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
 import roboPunksNFT from "./RoboPunksNFT.json";
 
-const roboPunksNFTAddress = "0x98dae444118201d9967669028e6Fd2B076024e6A";
+const roboPunksNFTAddress = "0x230db7994CfFf2ffE19e1813E8098454cf6E67B5";
 
 const MainMint = ({ accounts, setAccounts }) => {
   const [mintAmount, setMintAmount] = useState(1);
@@ -19,10 +19,27 @@ const MainMint = ({ accounts, setAccounts }) => {
         signer
       );
       try {
-        const response = await contract.mint(BigNumber.from(mintAmount),{
-            value: ethers.utils.parseEther((0.02 * mintAmount).toString()),
+        const price = await contract.getPrice();
+        const publicMint = await contract.publicMintOpen();
+        const whiteListMint = await contract.whiteListMintOpen();
+
+        if(publicMint === true){
+          const response = await contract.publicMint(BigNumber.from(mintAmount),{
+            value: ethers.utils.parseEther(
+              ((parseInt(Number(price)) /10 ** 18) * mintAmount).toString()
+              ),
         });
         console.log("response: ", response);
+        }
+        else if(whiteListMint === true){
+          const response = await contract.whiteListMint(BigNumber.from(mintAmount),{
+            value: ethers.utils.parseEther(
+              ((parseInt(Number(price)) /10 ** 18) * mintAmount).toString()
+              ),
+        });
+        console.log("response: ", response);
+        }
+       
       } catch (err) {
         console.log("error: ", err);
       }

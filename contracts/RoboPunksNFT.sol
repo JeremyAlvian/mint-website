@@ -1,61 +1,128 @@
-// SPDX-License-Identifier: UNLICENSED
-
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract RoboPunksNFT is ERC721, Ownable {
-    uint256 public mintPrice;
-    uint256 public totalSupply;
-    uint256 public maxSupply;
-    uint256 public maxPerWallet;
-    bool public isPublicMintEnabled;
-    string internal baseTokenUri;
-    address payable public withdrawWallet;
-    mapping(address => uint256) public walletMints;
+contract RoboPunksNFT is ERC721, ERC721Enumerable, Pausable, Ownable {
+    using Counters for Counters.Counter;
+    uint256 maxSupply = 10000;
 
-    constructor() payable ERC721('RoboPunks', 'RP') {
-        mintPrice = 0.02 ether;
-        totalSupply = 0;
-        maxSupply = 1000;
-        maxPerWallet = 3;
-        // set withdraw wallet address
+    uint256 publicPrice = 0.02 ether;
+    uint256 whiteListPrice = 0.002 ether;
+    string status;
+
+    bool public publicMintOpen = false;
+    bool public whiteListMintOpen = false;
+
+
+    mapping(address => bool) public allowList;
+
+    Counters.Counter private _tokenIdCounter;
+
+    constructor() ERC721("FuzzToken", "Fuzz") {
+        
     }
 
-    function priceSetter (uint256 _mintPrice) external onlyOwner {
-     mintPrice = _mintPrice;
+    function _baseURI() internal pure override returns (string memory) {
+        return "ipfs://Qmaa6TuP2s9pSKczHF4rwWhTKUdygrrDs8RmYYqCjP3Hye/";
     }
 
-    function setIsPublicMintEnabled(bool isPublicMintEnabled_) external onlyOwner {
-        isPublicMintEnabled = isPublicMintEnabled_;
+    function pause() public onlyOwner {
+        _pause();
     }
 
-    function setBaseTokenUri(string calldata baseTokenUri_) external onlyOwner {
-        baseTokenUri = baseTokenUri_;
+    function publicPriceSetter (uint256 _publicPrice) external onlyOwner {
+     publicPrice = _publicPrice;
     }
 
-    function tokenURI (uint256 tokenId_) public view override returns (string memory){
-        require(_exists(tokenId_), 'Token does not exist!');
-        return string(abi.encodePacked(baseTokenUri, Strings.toString(tokenId_), ".json"));
+    function whitelistPriceSetter (uint256 _presalePrice) external onlyOwner {
+     whiteListPrice = _presalePrice;
     }
 
-    function withdraw() external onlyOwner {
-        (bool success, ) = withdrawWallet.call{ value: address(this).balance }('');
-        require(success, 'withdraw failed');
+    function getPrice () public view returns (uint256)  {
+     if(publicMintOpen == true){
+         return publicPrice;
+     }
+     if(whiteListMintOpen == true){
+         return whiteListPrice;
+     }
+     return 0;
     }
 
-    function mint(uint256 quantity_) public payable {
-        require(isPublicMintEnabled, 'minting not enabled'); //set true sebelum dapat nge-mint
-        require(msg.value == quantity_ * mintPrice, 'wrong mint value'); //user input nilai yg benar
-        require(totalSupply * quantity_ <= maxSupply, 'sold out'); //make sure max supply tidak terlampaui
-        require(walletMints[msg.sender] + quantity_ <= maxPerWallet, 'exceed max wallet'); 
-        //menentukan jumlah mint yg dapat dilakukan per wallet dan melacak jumlah tiap wallet
 
-        for(uint256 i = 0; i < quantity_; i++) {
-            uint256 newTokenId = totalSupply + 1;
-            totalSupply++;
-            _safeMint(msg.sender, newTokenId);
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
+
+    // Modify the mint Windows
+    function editMintWindows(
+        bool _publicMintOpen,
+        bool _whiteListMintOpen
+    ) external onlyOwner {
+        publicMintOpen = _publicMintOpen;
+        whiteListMintOpen = _whiteListMintOpen;
+    }
+
+    // require only the allowList people to mint
+    // Add publicMint and whiteListMintOpen Variables
+    function whiteListMint(uint256 _quantity) public payable {
+        require(whiteListMintOpen, "Allowlist Mint Closed");
+        require(allowList[msg.sender], "You are not on the allow list");
+        require(msg.value == getPrice() * _quantity, "Not Enough Funds");
+        internalMint(_quantity);
+    }
+
+    //Add Payment
+    //Add limiting supply
+    function publicMint(uint256 _quantity) public payable  {
+        require(publicMintOpen, "Public Mint Closed");
+        require(msg.value == getPrice() * _quantity, "Not Enough Funds");
+        internalMint(_quantity);
+    }
+
+    function internalMint(uint256 _quantity) internal {
+        require(totalSupply() *_quantity <= maxSupply, "We Sold Out!");
+        uint256 tokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
+        _safeMint(msg.sender, tokenId);
+    }
+
+    function withdraw(address _address) external onlyOwner{
+        // get the balance of the contract
+        uint256 balance = address(this).balance;
+        payable(_address).transfer(balance);
+    }
+
+    // Popluate the Allow List
+    function setAllowList(address[] calldata addresses) external onlyOwner{
+        for(uint256 i = 0; i < addresses.length; i++){
+            allowList[addresses[i]] = true;
         }
+    }
+
+    
+
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
+        internal
+        whenNotPaused
+        override(ERC721, ERC721Enumerable)
+    {
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+    }
+
+    // The following functions are overrides required by Solidity.
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721Enumerable)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }
