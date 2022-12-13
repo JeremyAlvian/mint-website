@@ -1,26 +1,37 @@
-import React from "react";
-import { Box, Button, Flex, Image, Link, Spacer } from "@chakra-ui/react";
-import Facebook from "./assets/social-media-icons/facebook_32x32.png";
-import Twitter from "./assets/social-media-icons/twitter_32x32.png";
-import Email from "./assets/social-media-icons/email_32x32.png";
+import React, {useState} from "react";
+import { Box, Button, Flex } from "@chakra-ui/react";
+
+import { ethers } from "ethers";
+
 
 const Navbar = ({ accounts, setAccounts }) => {
   const isConnected = Boolean(accounts[0]);
+  const [signer, setSigner] = useState([])
+
 
   async function connectAccount() {
     if (window.ethereum) {
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
-      setAccounts(accounts);
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      let accounts = await provider.send("eth_requestAccounts", []);
+      setSigner(accounts);
+      provider.on('accountsChanged', function (accounts) {
+        setSigner(accounts);
+    });
+    const signer = provider.getSigner();
+
+    const address = await signer.getAddress();
+    setAccounts(address)
     }
   }
 
+  console.log({accounts, signer});
+
+
   return (
-    <Flex justify="space-between" algin="center" padding="30px">
+    <Flex justify="center" algin="center" padding="30px">
       {/* Left side - Social Media Icons */}
-      <Flex justify="space-around" width="40$" padding="0 75px">
-        <Link href= "https://www.facebook.com">
+      {/* <Flex justify="space-around" width="40$" padding="0 75px"> */}
+        {/* <Link href= "https://www.facebook.com">
             <Image src={Facebook} boxSize="42px" margin="0 15px" />
         </Link>
         <Link href= "https://www.twitter.com">
@@ -28,21 +39,13 @@ const Navbar = ({ accounts, setAccounts }) => {
         </Link>
         <Link href= "https://www.gmail.com">
             <Image src={Email} boxSize="42px" margin="0 15px" />
-        </Link>
-      </Flex>
+        </Link> */}
+      {/* </Flex> */}
 
       {/* Right side - Section and Connect */}
-      <Flex justify="space-around" align="center" width="40%" padding="30px">
-        <Box margin="0 15px">About</Box>
-        <Spacer />
-        <Box margin="0 15px">Mint</Box>
-        <Spacer />
-        <Box margin="0 15px">Team</Box>
-        <Spacer />
-
-          {/* Connect */}
-      {isConnected ? (
-        <Box margin="0 15px">Connected</Box>
+    {/* Connect */}
+    {isConnected ? (
+        <Box margin="0 15px">{accounts}</Box>
       ) : (
         <Button
         backgroundColor='#D6517D'
@@ -55,10 +58,6 @@ const Navbar = ({ accounts, setAccounts }) => {
         margin="0 15px"
         onClick={connectAccount}>Connect</Button>
       )}
-      </Flex>
-      
-
-    
     </Flex>
   );
 };

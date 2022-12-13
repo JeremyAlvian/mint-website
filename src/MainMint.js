@@ -1,58 +1,92 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ethers, BigNumber } from "ethers";
 import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
-import roboPunksNFT from "./RoboPunksNFT.json";
+import fuzzNFT from "./FuzzNFT.json";
+import axios from "axios";
 
-const roboPunksNFTAddress = "0x230db7994CfFf2ffE19e1813E8098454cf6E67B5";
+
+const FuzzNFTAddress = "0xd98F6bdB2d0ddDFA81Ddc6f99B701549893C0629";
+
 
 const MainMint = ({ accounts, setAccounts }) => {
   const [mintAmount, setMintAmount] = useState(1);
   const isConnected = Boolean(accounts[0]);
+  const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(FuzzNFTAddress, fuzzNFT.abi, signer);
+      const statusContract = await contract.status();
+      setStatus(statusContract);
+    };
+
+    fetchStatus().catch(console.error);
+  })
 
   async function handleMint() {
-    if (window.ethereum) {
+    if (window.ethereum && isConnected) {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const contract = new ethers.Contract(
-        roboPunksNFTAddress,
-        roboPunksNFT.abi,
+        FuzzNFTAddress,
+        fuzzNFT.abi,
         signer
       );
       try {
-        const price = await contract.getPrice();
-        const publicMint = await contract.publicMintOpen();
-        const whiteListMint = await contract.whiteListMintOpen();
-
-        if(publicMint === true){
-          const response = await contract.publicMint(BigNumber.from(mintAmount),{
-            value: ethers.utils.parseEther(
-              ((parseInt(Number(price)) /10 ** 18) * mintAmount).toString()
-              ),
+       let response;
+       const statusContract = await contract.status();
+       setStatus(statusContract);
+       const price = await contract.getPrice();
+       if(status === "PublicSale"){
+        response = await contract.publicMint(BigNumber.from(mintAmount), {
+          value: ethers.utils.parseEther(
+            ((parseInt(Number(price)) / 10 ** 18) * mintAmount).toString()
+          ),
         });
-        console.log("response: ", response);
-        }
-        else if(whiteListMint === true){
-          const response = await contract.whiteListMint(BigNumber.from(mintAmount),{
-            value: ethers.utils.parseEther(
-              ((parseInt(Number(price)) /10 ** 18) * mintAmount).toString()
+       }
+       if (status === "PreSale") {
+        const presale = await axios.get(
+          `${process.env.REACT_APP_WHITELIST_URL}${accounts}`
+        );
+        console.log(presale);
+        setTimeout(async () => {
+          response = await contract.presaleMint(
+            presale.data.proof,
+            BigNumber.from(mintAmount),
+            BigNumber.from(presale.data.allowance),
+            {
+              value: ethers.utils.parseEther(
+                ((parseInt(Number(price)) / 10 ** 18) * mintAmount).toString()
               ),
-        });
-        console.log("response: ", response);
-        }
-       
+            }
+          );
+        }, 500);
+      }
+       if (status === "ReservedSale") {
+        const reserved = await axios.get(
+          `${process.env.REACT_APP_RESERVED_URL}${accounts}`
+        );
+        setTimeout(async () => {
+          response = await contract.reservedMint(reserved.data.proof);
+        }, 500);
+      }
+      console.log("response: ", response)
       } catch (err) {
         console.log("error: ", err);
+        alert(err.message);
       }
     }
   }
 
   const handleDecrement = () => {
-    if (mintAmount <= 1) return;
+    if (mintAmount <= 1 || status === "ReservedSale") return;
     setMintAmount(mintAmount - 1);
   };
 
   const handleIncrement = () => {
-    if (mintAmount >= 3) return;
+    if (mintAmount >= 3 || status === "ReservedSale") return;
     setMintAmount(mintAmount + 1);
   };
 
@@ -61,7 +95,7 @@ const MainMint = ({ accounts, setAccounts }) => {
       <Box width="520px">
         <div>
           <Text fontSize="48px" textShadow="0 5px #000000">
-            RoboPunks
+            Fuzz NFT
           </Text>
           <Text
             fontSize="30px"
@@ -69,8 +103,8 @@ const MainMint = ({ accounts, setAccounts }) => {
             fontFamily="VT323"
             textShadow="0 2px 2px #000000"
           >
-            It's 2078. Can the RoboPunks NFT save humans from destructive
-            rampant NFT speculation? Mint RoboPunks to find out.
+            It's 2078. Can the Fuzz NFT save humans from destructive
+            rampant NFT speculation? Mint Fuzz to find out.
           </Text>
         </div>
 
