@@ -55,22 +55,22 @@ const MainMint = ({ accounts, setAccounts }) => {
           response = await contract.presaleMint(
             presale.data.proof,
             BigNumber.from(mintAmount),
-            BigNumber.from(presale.data.allowance),
+            BigNumber.from(presale?.data?.allowance),
             {
               value: ethers.utils.parseEther(
                 ((parseInt(Number(price)) / 10 ** 18) * mintAmount).toString()
               ),
             }
           );
-        }, 500);
+        }, 3000);
       }
        if (status === "ReservedSale") {
         const reserved = await axios.get(
           `${process.env.REACT_APP_RESERVED_URL}${accounts}`
         );
         setTimeout(async () => {
-          response = await contract.reservedMint(reserved.data.proof);
-        }, 500);
+          response = await contract.reservedMint(reserved?.data?.proof);
+        }, 3000);
       }
       console.log("response: ", response)
       } catch (err) {
