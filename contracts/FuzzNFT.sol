@@ -14,7 +14,8 @@ contract FuzzNFT is ERC721, Ownable, ReentrancyGuard {
     uint256 SALES_MAX_QTY = 100;
     uint256 public constant MAX_QTY_PER_MINTER = 2;
     uint256 public PRE_SALES_PRICE; //5000000000000000
-    uint256 public PUBLIC_SALES_PRICE; //10000000000000000
+    uint256 public PUBLIC_SALES_PRICE;//10000000000000000
+    uint256 public CREATOR_PRICE; 
     mapping(address => uint256) public publicMintedAmount;
     mapping(address => uint256) public whitelistMintedAmount;
     mapping(address => bool) public reservedClaimed;
@@ -30,7 +31,7 @@ contract FuzzNFT is ERC721, Ownable, ReentrancyGuard {
     constructor() ERC721("Fuzz Token", "Fuzz") {}
 
     function _baseURI() internal pure override returns (string memory) {
-        return "http://localhost:3000/nft/";
+        return "ipfs://QmYmW93hPDSB28C3XjeuSeuWdXqQyPa9u6fvhgvkbP2Pt3/";
     }
 
     //function _startTokenId() internal pure override returns (uint256) {
@@ -71,6 +72,19 @@ contract FuzzNFT is ERC721, Ownable, ReentrancyGuard {
         publicMintedAmount[msg.sender] += qty;
     }
 
+     function creatorMint() external payable onlyOwner{
+        uint qty = SALES_MAX_QTY - totalSupply;
+        require(keccak256(bytes(status)) == keccak256(bytes("PublicSale")), "Creator can only mint during Public Sale period");
+        require(CREATOR_PRICE > 0, "Set the price first!");
+        require(msg.value == CREATOR_PRICE * qty, "insufficient balance");
+         for(uint256 i = 0; i < qty; i ++) {
+            _tokenIdCounter.increment();
+            uint256 tokenId = _tokenIdCounter.current();
+            _safeMint(msg.sender, tokenId);
+            totalSupply++;
+        }
+    }
+
     function reservedMint(bytes32[] memory proof) public payable {
         require(keccak256(bytes(status)) == keccak256(bytes("ReservedSale")), "Reserved sale period is over");
         require(MerkleProof.verify(proof, reservedMerkleRoot, keccak256(abi.encodePacked(msg.sender))), "You are not on the reserved list.");
@@ -83,6 +97,8 @@ contract FuzzNFT is ERC721, Ownable, ReentrancyGuard {
         totalSupply++;
 
     }
+
+   
 
     function getPrice() public view returns (uint256) {
        if (keccak256(bytes(status)) == keccak256(bytes("PreSale"))) {
@@ -105,6 +121,10 @@ contract FuzzNFT is ERC721, Ownable, ReentrancyGuard {
 
     function setPublicSalePrice (uint256 _price) external onlyOwner {
         PUBLIC_SALES_PRICE = _price;
+    }
+
+    function setCreatorPrice(uint256 _price) external onlyOwner{
+        CREATOR_PRICE = _price;
     }
 
     function setStatus (string memory _status) external onlyOwner {

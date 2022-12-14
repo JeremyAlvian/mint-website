@@ -5,7 +5,7 @@ import fuzzNFT from "./FuzzNFT.json";
 import axios from "axios";
 
 
-const FuzzNFTAddress = "0xd98F6bdB2d0ddDFA81Ddc6f99B701549893C0629";
+const FuzzNFTAddress = "0x856816168cFd65B41c19031352E511F07647D505";
 
 
 const MainMint = ({ accounts, setAccounts }) => {
