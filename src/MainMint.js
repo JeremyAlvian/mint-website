@@ -14,6 +14,8 @@ const MainMint = ({ accounts, setAccounts }) => {
   const [status, setStatus] = useState("");
   const [supply, setSupply] = useState([]);
   const [maxQty, setMaxQty] = useState([]);
+  const [price, setPrice] = useState([]);
+
 
 
   useEffect(() => {
@@ -72,6 +74,29 @@ const MainMint = ({ accounts, setAccounts }) => {
     };
     
     fetchMaxQty().catch(console.error);
+  })
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(FuzzNFTAddress, fuzzNFT.abi, signer);
+      try {
+        let price;
+        const priceContract = await contract.getPrice();
+        price = 
+            ((parseInt(Number(priceContract)) / 10 ** 18))
+       
+        console.log("price: ", price)
+        setPrice(price);
+
+      } catch (error) {
+        console.log("error: ", error);
+        alert(error.message);
+      }
+    };
+    
+    fetchPrice().catch(console.error);
   })
 //   useEffect(() => {
 //   const fetchSupply = async() => {
@@ -168,11 +193,20 @@ const MainMint = ({ accounts, setAccounts }) => {
 
             Total Supply : {supply} / {maxQty}
           </Text>
+         
           
         </div>
 
         {isConnected ? (
           <div>
+             <Text  fontSize="30px"
+            letterSpacing="-5.5%"
+            fontFamily="VT323"
+            textShadow="0 2px 2px #000000">
+             Now is "{status}" <br />
+                Price : {price * mintAmount} eth
+             </Text>
+                
             <Flex align="center" justify="center">
               <Button
                 backgroundColor="#D6517D"
