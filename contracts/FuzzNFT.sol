@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract FuzzNFT is ERC721, Ownable, ReentrancyGuard {
     using Counters for Counters.Counter;
-    uint256 SALES_MAX_QTY = 100;
+    uint256 public constant SALES_MAX_QTY = 1000;
     uint256 public constant MAX_QTY_PER_MINTER = 2;
     uint256 public PRE_SALES_PRICE; //5000000000000000
     uint256 public PUBLIC_SALES_PRICE;//10000000000000000
@@ -21,7 +21,7 @@ contract FuzzNFT is ERC721, Ownable, ReentrancyGuard {
     mapping(address => bool) public reservedClaimed;
     bytes32 whitelistMerkleRoot;
     bytes32 reservedMerkleRoot;
-    uint256 totalSupply = 0;
+    uint256 public totalSupply = 0;
 
     string public status; // PreSale | PublicSale | ReservedSale
 
@@ -100,11 +100,20 @@ contract FuzzNFT is ERC721, Ownable, ReentrancyGuard {
 
    
 
-    function getPrice() public view returns (uint256) {
+   function getPrice() public view returns (uint256) {
        if (keccak256(bytes(status)) == keccak256(bytes("PreSale"))) {
           return PRE_SALES_PRICE;
         } if(keccak256(bytes(status)) == keccak256(bytes("PublicSale"))) {
-            return PUBLIC_SALES_PRICE;
+            if(totalSupply < 100) {
+             return 10000000000000000;
+            
+            }
+            if(totalSupply >= 100 && totalSupply < 400) {
+                return 15000000000000000;
+            }
+            if(totalSupply >= 400) {
+                return 20000000000000000;
+            }
         }
         return 0;
     }
@@ -119,9 +128,6 @@ contract FuzzNFT is ERC721, Ownable, ReentrancyGuard {
         PRE_SALES_PRICE = _price;
     }
 
-    function setPublicSalePrice (uint256 _price) external onlyOwner {
-        PUBLIC_SALES_PRICE = _price;
-    }
 
     function setCreatorPrice(uint256 _price) external onlyOwner{
         CREATOR_PRICE = _price;
