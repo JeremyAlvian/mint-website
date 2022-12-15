@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ethers, BigNumber } from "ethers";
-import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
+import { Box, Button, Divider, Flex, Input, Text } from "@chakra-ui/react";
 import fuzzNFT from "./FuzzNFT.json";
 import axios from "axios";
 
@@ -12,6 +12,9 @@ const MainMint = ({ accounts, setAccounts }) => {
   const [mintAmount, setMintAmount] = useState(1);
   const isConnected = Boolean(accounts[0]);
   const [status, setStatus] = useState("");
+  const [supply, setSupply] = useState([]);
+  const [maxQty, setMaxQty] = useState([]);
+
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -21,9 +24,66 @@ const MainMint = ({ accounts, setAccounts }) => {
       const statusContract = await contract.status();
       setStatus(statusContract);
     };
-
+  
     fetchStatus().catch(console.error);
   })
+
+  useEffect(() => {
+    const fetchSupply = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(FuzzNFTAddress, fuzzNFT.abi, signer);
+      try {
+        let totalSupp;
+        const supplyContract = await contract.totalSupply();
+        totalSupp = 
+            ((parseInt(Number(supplyContract))))
+       
+        console.log("total supply: ", totalSupp)
+        setSupply(totalSupp);
+
+      } catch (error) {
+        console.log("error: ", error);
+        alert(error.message);
+      }
+    };
+    
+    fetchSupply().catch(console.error);
+  })
+
+  useEffect(() => {
+    const fetchMaxQty = async () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(FuzzNFTAddress, fuzzNFT.abi, signer);
+      try {
+        let maxQty;
+        const maxQtyContract = await contract.SALES_MAX_QTY();
+        maxQty = 
+            ((parseInt(Number(maxQtyContract))))
+       
+        console.log("max QTY: ", maxQty)
+        setMaxQty(maxQty);
+
+      } catch (error) {
+        console.log("error: ", error);
+        alert(error.message);
+      }
+    };
+    
+    fetchMaxQty().catch(console.error);
+  })
+//   useEffect(() => {
+//   const fetchSupply = async() => {
+//     const provider = new ethers.providers.Web3Provider(window.ethereum);
+//     const signer = provider.getSigner();
+//     const contract = new ethers.Contract(FuzzNFTAddress, fuzzNFT.abi, signer);
+//     const total = await contract.totalSupply();
+//     setSupply(total);
+//   }
+//   fetchSupply().catch(console.error);
+
+// })
 
   async function handleMint() {
     if (window.ethereum && isConnected) {
@@ -104,8 +164,11 @@ const MainMint = ({ accounts, setAccounts }) => {
             textShadow="0 2px 2px #000000"
           >
             It's 2078. Can the Fuzz NFT save humans from destructive
-            rampant NFT speculation? Mint Fuzz to find out.
+            rampant NFT speculation? Mint Fuzz to find out. <Divider />
+
+            Total Supply : {supply} / {maxQty}
           </Text>
+          
         </div>
 
         {isConnected ? (
