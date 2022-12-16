@@ -5,7 +5,7 @@ import fuzzNFT from "./FuzzNFT.json";
 import axios from "axios";
 
 
-const FuzzNFTAddress = "0xe333EC0268F4Fbb69aFc3651c7be42cce141Bf54";
+const FuzzNFTAddress = "0x78113b596668845a87a04152BCB7995E85980a98";
 
 
 const MainMint = ({ accounts, setAccounts }) => {
@@ -191,7 +191,6 @@ const MainMint = ({ accounts, setAccounts }) => {
             It's 2078. Can the Fuzz NFT save humans from destructive
             rampant NFT speculation? Mint Fuzz to find out. <Divider />
 
-            Total Supply : {supply} / {maxQty}
           </Text>
          
           
@@ -203,6 +202,8 @@ const MainMint = ({ accounts, setAccounts }) => {
             letterSpacing="-5.5%"
             fontFamily="VT323"
             textShadow="0 2px 2px #000000">
+              Total Supply : {supply} / {maxQty}
+              <Divider />
              Now is "{status}" <br />
                 Price : {price * mintAmount} eth
              </Text>
